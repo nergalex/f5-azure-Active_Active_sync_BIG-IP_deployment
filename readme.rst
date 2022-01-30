@@ -9,10 +9,10 @@ Architecture
    :width: 800
    :alt: Access path for TierI applications
 
-.. image:: ./_pictures/tierII_access_path.png
+.. image:: ./_pictures/tierI_access_path.png
    :align: center
    :width: 800
-   :alt: Access path for TierII applications
+   :alt: Access path for TierI applications
 
 .. image:: ./_pictures/routing_view.png
    :align: center
@@ -78,7 +78,6 @@ Extra variable                                  Description
 
 .. code-block:: yaml
 
-    activity: create_hub_edge_security_inbound
     extra_availability_zone:
       - 1
     extra_external_subnet_address_prefix: 10.100.2.0/24
@@ -121,22 +120,10 @@ Extra variable                                  Description
 ``extra_vmss_name``                             logical vmss name
 ``extra_image``                                 CentOS image version
 ``extra_key_data``                              admin certificate
-``extra_subnet_dataplane_name``                 logical name for eth1 subnet
-``extra_dataplane_subnet_address_mask``         eth1 (data-plane) subnet mask
-``extra_gw_dataplane``                          eth1 (data-plane) GW
-``extra_gw_management``                         eth0 (mgmt-plane) GW
-``extra_route_prefix_on_premise``               cross management subnet
-``extra_lb_dataplane_name``                     LB name for dataplane traffic
-``extra_lb_dataplane_type``                     LB type for dataplane traffic
-``extra_nginx_plus_version``                    NGINX version to install
-``extra_managed_by``                            NGINX Controller or NGINX Instance Manager
-``extra_nginx_controller_ip``                   NGINX Controller IP or FQDN
-``extra_nginx_controller_password``             NGINX Controller user password
-``extra_nginx_controller_username``             NGINX Controller username
+
 
 .. code-block:: yaml
 
-    activity: create-vmss-autoscale
     extra_admin_password: Ch4ngeMe!
     extra_admin_user: admin
     extra_availability_zone: '[1, 2]'
