@@ -240,7 +240,7 @@ Extra variable                                  Description
     extra_location: francecentral
     extra_offer: f5-big-ip-byol
     extra_platform_name: ingress
-    extra_platform_tags: environment=POC platform=ingress project=maif
+    extra_platform_tags: environment=POC platform=ingress project=customer_name
     extra_port_mgt: 443
     extra_project_name: customer_name
     extra_route_prefix_on_premise: 10.0.0.0/24
