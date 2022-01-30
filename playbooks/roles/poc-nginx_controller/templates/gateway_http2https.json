@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "name": "{{ var_instance_group }}_http2https",
+    "displayName": "generic http2https",
+    "description": "Redirect HTTP to HTTPS",
+    "tags": ["{{ var_instance_group }}"]
+  },
+  "desiredState": {
+    "configSnippets": {
+      "mainSnippet": {
+        "directives": [
+          {
+            "directive": "load_module",
+            "args": [
+              "modules/ngx_http_brotli_filter_module.so"
+            ]
+          },
+          {
+            "directive": "load_module",
+            "args": [
+              "modules/ngx_http_brotli_static_module.so"
+            ]
+          }
+        ]
+      }
+    },
+    "ingress": {
+      "uris": {
+        "http://.*.{{ extra_app.domain }}": {
+          "matchMethod": "REGEX"
+        }
+      },
+      "placement": {
+        "instanceGroupRefs": [
+          {
+            "ref": "/infrastructure/instance-groups/{{ var_instance_group }}"
+          }
+        ]
+      }
+    }
+  }
+}

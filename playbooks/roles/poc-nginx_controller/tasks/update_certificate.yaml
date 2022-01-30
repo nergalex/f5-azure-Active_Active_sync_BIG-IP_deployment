@@ -1,0 +1,28 @@
+- name: SET var_env_prefix
+  set_fact:
+    var_env_prefix: "env_north_"
+
+- name: Retrieve the NGINX Controller auth token
+  include_role:
+    name: nginxinc.nginx_controller_generate_token
+  vars:
+    nginx_controller_fqdn: "{{extra_nginx_controller_ip}}"
+    nginx_controller_user_email: "{{extra_nginx_controller_username}}"
+    nginx_controller_user_password: "{{extra_nginx_controller_password}}"
+
+- name: Create certificate
+  include_role:
+    name: nginxinc.nginx_controller_certificate
+  vars:
+    nginx_controller_fqdn: "{{extra_nginx_controller_ip}}"
+    nginx_controller_environmentName: "{{ var_env_prefix }}{{ extra_app.environment | lower }}"
+    nginx_controller_certificate:
+      metadata:
+        name: "crt_{{extra_app.name | lower}}"
+        displayName: "Certificate {{extra_app.name | lower}}"
+        description: Lets Encrypt
+      desiredState:
+        type: PEM
+        privateKey: "{{ stats_key }}"
+        publicCert: "{{ stats_crt }}"
+
