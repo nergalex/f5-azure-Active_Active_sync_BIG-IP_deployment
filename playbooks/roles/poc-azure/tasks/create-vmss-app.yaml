@@ -77,14 +77,5 @@
     index_var: cur_index
   register: output_vmss_instances_extension
 
-- name: CMP OUTPUT
-  debug:
-    msg: "
-    key={{ item.item.name }} provisioning state;value={{ item.item.provisioning_state }};help=VM #{{ cur_index }} with extension;
-    key={{ item.item.name }} power state;value={{ item.item.power_state }};help=VM #{{ cur_index }} with extension;
-    "
-  loop: "{{ output_vmss_instances_extension.results }}"
-  loop_control:
-    index_var: cur_index
 
 ...
