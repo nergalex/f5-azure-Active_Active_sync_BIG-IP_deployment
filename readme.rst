@@ -159,9 +159,96 @@ Extra variable                                  Description
     extra_publisher: OpenLogic
     extra_route_prefix_on_premise: 10.0.0.0/24
     extra_sku: 7_9-gen2
-    extra_ssh_private_key: -----BEGIN RSA PRIVATE KEY-----...-----END  RSA PRIVATE KEY-----
     extra_subnet_dataplane_name: nginx
     extra_vm_size: Standard_DS3_v2
     extra_vmss_capacity: 1
     extra_vmss_name: nap
+
+
+BIG-IP managed by BIG-IQ
+=============================================
+
+Workflow template ``wf-create_vmss_device-group_awaf``
+
+=============================================================   =============================================       =============================================   =============================================   =============================================   =============================================
+Job template                                                    objective                                           playbook                                        activity or play targeted in role               inventory                                       credential
+=============================================================   =============================================       =============================================   =============================================   =============================================   =============================================
+``poc-azure_create-vmss-bigip``                                 Create VMSS                                         ``playbooks/poc-azure.yaml``                    ``create-vmss-bigip``                           CMP_inv_CloudBuilderf5                          <Service Principal>
+``poc-azure_set-vmss-master_vm``                                Set a VM protected from ScaleIn                     ``playbooks/poc-azure.yaml``                    ``set-vmss-master_vm``                          CMP_inv_CloudBuilderf5                          <Service Principal>
+``poc-azure_get-vmss-facts``                                    Get VMs IPs                                         ``playbooks/poc-azure.yaml``                    ``get-vmss-facts``                              CMP_inv_CloudBuilderf5                          <Service Principal>
+``poc-f5_do_vmss_device-group``                                 Onboard BIG-IPs via BIG-IQ                          ``playbooks/poc-f5.yaml``                       ``do_vmss_device-group_bigiq``                  localhost
+``poc-f5-as3_vmss_device-group_create_log_profile``             Create a log profile for Security event             ``playbooks/poc-f5.yaml``                       ``as3_vmss_device-group_bigiq_create_config``   localhost
+=============================================================   =============================================       =============================================   =============================================   =============================================   =============================================
+
+==============================================  ========================================================================
+Extra variable                                  Description
+==============================================  ========================================================================
+``extra_bigiq_admin_password``                  BIG-IQ admin user name
+``extra_bigiq_admin_user``                      BIG-IQ admin user password
+``extra_bigiq_ip_mgt``                          BIG-IQ IP or FQDN
+``extra_bigiq_port_mgt``                        BIG-IQ management port
+``extra_dcd_ip``                                BIG-IQ lognode IP
+``extra_dcd_port``                              BIG-IQ lognode port
+``extra_dcd_servers``                           BIG-IQ lognode servers (Lab) or ILB VIP for ASM log (Production)
+``extra_admin_user``                            BIG-IP admin user name
+``extra_admin_password``                        BIG-IP admin user password
+``extra_port_mgt``                              BIG-IP management port
+``extra_template_do``                           BIG-IP Declarative Onboardig template to use
+``extra_as3_template``                          BIG-IP Application Service template to deploy
+``extra_platform_name``                         logical platform_name
+``extra_platform_tags``                         resource tags to apply
+``extra_project_name``                          logical project_name
+``extra_location``                              Azure region
+``extra_vmss_capacity``                         initial vmss_capacity
+``extra_vmss_name``                             logical vmss_name
+``extra_vm_size``                               VM type
+``extra_availability_zone``                     availability zones
+``extra_key_data``                              BIG-IP admin CRT
+``extra_offer``                                 BIG-IP offer (BYOL)
+``extra_sku``                                   BIG-IP version
+``extra_elb_management_name``                   ELB for outbound connection (package download, live update, Shape...)
+``extra_subnet_dataplane_name``                 logical name for eth1 subnet
+``extra_dataplane_subnet_address_mask``         eth1 subnet mask
+``extra_gw_dataplane``                          eth1 GW
+``extra_gw_management``                         eth0 GW
+``extra_route_prefix_on_premise``               cross management subnet
+``extra_lb_dataplane_name``                     LB name for dataplane traffic
+``extra_lb_dataplane_type``                     LB type for dataplane traffic
+==============================================  ========================================================================
+
+.. code-block:: yaml
+
+    extra_admin_password: Ch4ngeMe!
+    extra_admin_user: admin
+    extra_as3_template: as3_security_logging.jinja2
+    extra_availability_zone: '[1, 2]'
+    extra_bigiq_admin_password: Ch4ngeMe!
+    extra_bigiq_admin_user: adminUser
+    extra_bigiq_device_discovery_state: present
+    extra_bigiq_ip_mgt: 1.1.1.1
+    extra_bigiq_port_mgt: 443
+    extra_dataplane_subnet_address_mask: 24
+    extra_dcd_ip: 10.0.0.5
+    extra_dcd_port: 8514
+    extra_dcd_servers: '[{''address'': ''10.0.0.5'', ''port'': ''8514''}]'
+    extra_elb_management_name: outbound-management-vmss-awaf
+    extra_gw_dataplane: 10.100.2.1
+    extra_gw_management: 10.100.0.1
+    extra_key_data: -----BEGIN CERTIFICATE-----...-----END  CERTIFICATE-----
+    extra_lb_dataplane_name: external
+    extra_lb_dataplane_type: ilb
+    extra_location: francecentral
+    extra_offer: f5-big-ip-byol
+    extra_platform_name: ingress
+    extra_platform_tags: environment=POC platform=ingress project=maif
+    extra_port_mgt: 443
+    extra_project_name: customer_name
+    extra_route_prefix_on_premise: 10.0.0.0/24
+    extra_sku: f5-big-all-1slot-byol
+    extra_subnet_dataplane_name: external
+    extra_template_do: do-vmss-standalone-2nic-awaf-BIGIQ.json
+    extra_vm_size: Standard_DS3_v2
+    extra_vmss_capacity: 2
+    extra_vmss_name: bigipwaf
+
 
