@@ -22,6 +22,31 @@ Architecture
 .. contents:: Contents
     :local:
 
+Ansible Role structure
+**************
+- Deployment is based on ``workflow template``. Example: ``workflow template``=``wf-create_create_edge_security_inbound`` ;
+- A ``workflow template`` includes multiple ``job template``. Example: ``job template``=``poc-azure_create_hub_edge_security_inbound``
+- A ``job template`` have an associated ``playbook``. Example: ``playbook``=``playbooks/poc-azure.yaml``
+- A ``playbook`` launch a ``play`` in a ``role``. Example: ``role``=``poc-azure``
+
+.. code:: yaml
+
+    - hosts: localhost
+      gather_facts: no
+      roles:
+        - role: poc-azure
+
+- A ``play`` is an ``extra variable`` named ``activity`` and set in each ``job template``. Example: ``create_hub_edge_security_inbound``
+- The specified ``play`` (or ``activity``) is launched by the ``main.yaml`` task located in the role ``tasks/main.yaml``
+
+.. code:: yaml
+
+    - name: Run specified activity
+      include_tasks: "{{ activity }}.yaml"
+      when: activity is defined
+
+- The specified ``play`` contains ``tasks`` to execute. Example: play=``create_hub_edge_security_inbound.yaml``
+
 Deployment
 *****************************************
 
@@ -42,7 +67,6 @@ Extra variable                                  Description
 ``extra_platform_name``                         logical platform name
 ``extra_platform_tags``                         tags on resources
 ``extra_location``                              region
-``extra_availability_zone``                     list of Availability Zone IDs
 ``extra_vnet_address_prefixes``                 dataplane SuperNet
 ``extra_nginx_subnet_address_prefix``           NGINX dataplane subnet
 ``extra_external_subnet_address_prefix``        BIG-IP dataplane subnet
@@ -69,4 +93,76 @@ Extra variable                                  Description
       - 10.100.10.0/24
     extra_vnet_address_prefixes: 10.100.0.0/16
 
+NGINX App Protect managed by NGINX Controller
+=============================================
+
+Workflow template ``wf-create_managed_vmss_nginx_first_line``
+
+=============================================================   =============================================       =============================================   =============================================   =============================================   =============================================
+Job template                                                    objective                                           playbook                                        activity or play targeted in role               inventory                                       credential
+=============================================================   =============================================       =============================================   =============================================   =============================================   =============================================
+``poc-azure_create-vmss-nginx-2NIC_1LB``                        Create VMSS                                         ``playbooks/poc-azure.yaml``                    ``create-vmss-nginx-2NIC_1LB``                  CMP_inv_CloudBuilderf5                          <Service Principal>
+``poc-azure_create-vmss-extension-controller_agent``            Install NGINX using VMSS extension                  ``playbooks/poc-azure.yaml``                    ``create-vmss-extension-controller_agent``      CMP_inv_CloudBuilderf5                          <Service Principal>
+``poc-azure_create-vmss-autoscale``                             Enable auto-scaling                                 ``playbooks/poc-azure.yaml``                    ``create-vmss-autoscale``                       CMP_inv_CloudBuilderf5                          <Service Principal>
+=============================================================   =============================================       =============================================   =============================================   =============================================   =============================================
+
+==============================================  =============================================
+Extra variable                                  Description
+==============================================  =============================================
+``extra_location``                              region
+``extra_availability_zone``                     list of Availability Zone IDs
+``extra_platform_name``                         logical platform name
+``extra_platform_tags``                         tags on resources
+``extra_publisher``                             Editor name
+``extra_offer``                                 OS distrib
+``extra_sku``                                   OS distrib version
+``extra_vm_size``                               VM type
+``extra_vmss_capacity``                         initial vmss capacity
+``extra_vmss_name``                             logical vmss name
+``extra_image``                                 CentOS image version
+``extra_key_data``                              admin certificate
+``extra_subnet_dataplane_name``                 logical name for eth1 subnet
+``extra_dataplane_subnet_address_mask``         eth1 (data-plane) subnet mask
+``extra_gw_dataplane``                          eth1 (data-plane) GW
+``extra_gw_management``                         eth0 (mgmt-plane) GW
+``extra_route_prefix_on_premise``               cross management subnet
+``extra_lb_dataplane_name``                     LB name for dataplane traffic
+``extra_lb_dataplane_type``                     LB type for dataplane traffic
+``extra_nginx_plus_version``                    NGINX version to install
+``extra_managed_by``                            NGINX Controller or NGINX Instance Manager
+``extra_nginx_controller_ip``                   NGINX Controller IP or FQDN
+``extra_nginx_controller_password``             NGINX Controller user password
+``extra_nginx_controller_username``             NGINX Controller username
+
+.. code-block:: yaml
+
+    activity: create-vmss-autoscale
+    extra_admin_password: Ch4ngeMe!
+    extra_admin_user: admin
+    extra_availability_zone: '[1, 2]'
+    extra_dataplane_subnet_address_mask: 24
+    extra_gw_dataplane: 10.100.1.1
+    extra_gw_management: 10.100.0.1
+    extra_image: 7.9.2021071901
+    extra_key_data: -----BEGIN CERTIFICATE-----...-----END  CERTIFICATE-----
+    extra_lb_dataplane_name: external
+    extra_lb_dataplane_type: elb
+    extra_location: francecentral
+    extra_managed_by: nginx_controller
+    extra_nginx_controller_ip: 10.0.0.6
+    extra_nginx_controller_password: Ch4ngeMe!
+    extra_nginx_controller_username: admin@admin.adm
+    extra_nginx_plus_version: 25
+    extra_offer: CentOS
+    extra_platform_name: ingress
+    extra_platform_tags: environment=POC platform=ingress project=customer_name
+    extra_project_name: customer_name
+    extra_publisher: OpenLogic
+    extra_route_prefix_on_premise: 10.0.0.0/24
+    extra_sku: 7_9-gen2
+    extra_ssh_private_key: -----BEGIN RSA PRIVATE KEY-----...-----END  RSA PRIVATE KEY-----
+    extra_subnet_dataplane_name: nginx
+    extra_vm_size: Standard_DS3_v2
+    extra_vmss_capacity: 1
+    extra_vmss_name: nap
 
