@@ -1,0 +1,270 @@
+---
+- name: CREATE Resource Group
+  delegate_to: localhost
+  azure_rm_resourcegroup:
+    name: "rg-{{ extra_platform_name }}"
+    location: "{{ extra_location }}"
+    tags: "{{ extra_platform_tags }}  Name=rg-{{ extra_platform_name }} owner={{ owner }}"
+
+- name: CREATE Virtual Network
+  delegate_to: localhost
+  azure_rm_virtualnetwork:
+    resource_group: "rg-{{ extra_platform_name }}"
+    name: "vnet-{{ extra_platform_name }}"
+    location: "{{ extra_location }}"
+    address_prefixes: "{{ extra_vnet_address_prefixes }}"
+    tags: "{{ extra_platform_tags }} Name=vnet-{{ extra_platform_name }} owner={{ owner }}"
+
+- name: CREATE Network Security Group for Management access
+  delegate_to: localhost
+  azure_rm_securitygroup:
+    resource_group: "rg-{{ extra_platform_name }}"
+    name: "nsg-{{ extra_platform_name }}-management"
+    location: "{{ extra_location }}"
+    tags: "{{ extra_platform_tags }} Name=nsg-{{ extra_platform_name }}-management owner={{ owner }}"
+    rules:
+      - name: in_allow_mgt_from_bt
+        direction: Inbound
+        priority: 100
+        source_address_prefix:
+          - '{{ extra_subnet_mgt_on_premise }}'
+        access: Allow
+      - name: in_allow_mgt_from_internet
+        direction: Inbound
+        priority: 101
+        protocol: Tcp
+        destination_port_range:
+          - 22
+          - 80
+          - 443
+          - 8443
+        access: Allow
+      - name: out_allow_all
+        direction: Outbound
+        priority: 999
+        access: Allow
+
+- name: CREATE Network Security Group for Trust access
+  delegate_to: localhost
+  azure_rm_securitygroup:
+    resource_group: "rg-{{ extra_platform_name }}"
+    name: "nsg-{{ extra_platform_name }}-trust"
+    location: "{{ extra_location }}"
+    tags: "{{ extra_platform_tags }} Name=nsg-{{ extra_platform_name }}-trust owner={{ owner }}"
+    rules:
+      - name: in_allow_all
+        direction: Inbound
+        priority: 999
+        access: Allow
+      - name: out_allow_all
+        direction: Outbound
+        priority: 999
+        access: Allow
+
+- name: CREATE Network Security Group for Untrust access
+  delegate_to: localhost
+  azure_rm_securitygroup:
+    resource_group: "rg-{{ extra_platform_name }}"
+    name: "nsg-{{ extra_platform_name }}-untrust"
+    location: "{{ extra_location }}"
+    tags: "{{ extra_platform_tags }} Name=nsg-{{ extra_platform_name }}-external owner={{ owner }}"
+    rules:
+      - name: in_allow_external
+        direction: Inbound
+        priority: 100
+        protocol: Tcp
+        access: Allow
+      - name: out_allow_all
+        direction: Outbound
+        priority: 999
+        access: Allow
+
+- name: SET fact vrf_list
+  set_fact:
+    vrf_list:
+    - nginx
+    - external
+    - management
+
+- name: CREATE VRF
+  delegate_to: localhost
+  azure_rm_routetable:
+    resource_group: "rg-{{ extra_platform_name }}"
+    location: "{{ extra_location }}"
+    name: "rt-{{ extra_platform_name }}-{{ item }}"
+    disable_bgp_route_propagation: True
+    tags: "{{ extra_platform_tags }} Name=rt-{{ extra_platform_name }}-{{ item }} owner={{ owner }}"
+  loop: "{{ vrf_list }}"
+
+- name: SET fact vrf_to_internet_list
+  set_fact:
+    vrf_to_internet_list:
+    - nginx
+    - management
+
+- name: CREATE default route via Internet to VRF
+  delegate_to: localhost
+  azure_rm_route:
+    resource_group: "rg-{{ extra_platform_name }}"
+    route_table_name: "rt-{{ extra_platform_name }}-{{ item }}"
+    name: 'default_internet'
+    address_prefix: '0.0.0.0/0'
+    next_hop_type: 'internet'
+  loop: "{{ vrf_to_internet_list }}"
+
+- name: CREATE Subnet Management
+  delegate_to: localhost
+  azure_rm_subnet:
+    resource_group: "rg-{{ extra_platform_name }}"
+    virtual_network: "vnet-{{ extra_platform_name }}"
+    name: "net-{{ extra_platform_name }}-management"
+    address_prefix: "{{ extra_management_subnet_address_prefix }}"
+    security_group_name: "nsg-{{ extra_platform_name }}-management"
+    route_table: "rt-{{ extra_platform_name }}-management"
+
+- name: CREATE Subnet nginx
+  delegate_to: localhost
+  azure_rm_subnet:
+    resource_group: "rg-{{ extra_platform_name }}"
+    virtual_network: "vnet-{{ extra_platform_name }}"
+    name: "net-{{ extra_platform_name }}-nginx"
+    address_prefix: "{{ extra_nginx_subnet_address_prefix }}"
+    security_group_name: "nsg-{{ extra_platform_name }}-untrust"
+    route_table: "rt-{{ extra_platform_name }}-nginx"
+
+- name: CREATE Subnet external
+  delegate_to: localhost
+  azure_rm_subnet:
+    resource_group: "rg-{{ extra_platform_name }}"
+    virtual_network: "vnet-{{ extra_platform_name }}"
+    name: "net-{{ extra_platform_name }}-external"
+    address_prefix: "{{ extra_external_subnet_address_prefix }}"
+    security_group_name: "nsg-{{ extra_platform_name }}-trust"
+    route_table: "rt-{{ extra_platform_name }}-external"
+
+- name: GET Subnet external
+  delegate_to: localhost
+  azure_rm_subnet_info:
+    resource_group: "rg-{{ extra_platform_name }}"
+    virtual_network_name: "vnet-{{ extra_platform_name }}"
+    name: "net-{{ extra_platform_name }}-external"
+  register: output_subnet_external
+
+- name: SET fact elb_list
+  set_fact:
+    elb_list:
+    - external
+    - outbound-management-vmss-nginx-external
+    - outbound-management-vmss-awaf
+
+- name: CREATE Public IP Address for External ELB
+  delegate_to: localhost
+  azure_rm_publicipaddress:
+    resource_group: "rg-{{ extra_platform_name }}"
+    allocation_method: Static
+    domain_name: "{{ extra_platform_name | lower }}-elb-{{ item }}"
+    name: "{{ extra_platform_name | lower }}-elb-{{ item }}"
+    location: "{{ extra_location }}"
+    sku: 'Standard'
+    idle_timeout: 30
+    version: 'ipv4'
+    tags:
+      Name: "{{ extra_platform_name | lower }}-elb-{{ item }}"
+      owner: "{{ owner }}"
+  loop: "{{ elb_list }}"
+
+- name: CREATE External Load Balancer
+  delegate_to: localhost
+  azure_rm_loadbalancer:
+    resource_group: "rg-{{ extra_platform_name }}"
+    name: "elb-{{ extra_platform_name }}-{{ item }}"
+    location: "{{ extra_location }}"
+    sku: Standard
+    frontend_ip_configurations:
+      - name: "redir-{{ extra_platform_name }}-{{ item }}"
+        public_ip_address: "{{ extra_platform_name }}-elb-{{ item }}"
+    backend_address_pools:
+      - name: "pool-{{ extra_platform_name }}-{{ item }}"
+    probes:
+      - name: "hc-tcp-443"
+        port: 443
+        protocol: Tcp
+        interval: 5
+        fail_count: 2
+      - name: "hc-tcp-80"
+        port: 80
+        protocol: Tcp
+        interval: 5
+        fail_count: 2
+    load_balancing_rules:
+      - name: "rule-{{ extra_platform_name }}-{{ item }}-https"
+        frontend_ip_configuration: "redir-{{ extra_platform_name }}-{{ item }}"
+        backend_address_pool: "pool-{{ extra_platform_name }}-{{ item }}"
+        protocol: Tcp
+        load_distribution: SourceIP
+        frontend_port: 443
+        backend_port: 443
+        probe: "hc-tcp-443"
+      - name: "rule-{{ extra_platform_name }}-{{ item }}-http"
+        frontend_ip_configuration: "redir-{{ extra_platform_name }}-{{ item }}"
+        backend_address_pool: "pool-{{ extra_platform_name }}-{{ item }}"
+        protocol: Tcp
+        load_distribution: SourceIP
+        frontend_port: 80
+        backend_port: 80
+        probe: "hc-tcp-80"
+  loop: "{{ elb_list }}"
+
+- name: CREATE Internal Load Balancer External
+  delegate_to: localhost
+  azure_rm_loadbalancer:
+    resource_group: "rg-{{ extra_platform_name }}"
+    name: "ilb-{{ extra_platform_name }}-external"
+    location: "{{ extra_location }}"
+    sku: Standard
+    frontend_ip_configurations:
+      - name: "redir-{{ extra_platform_name }}-external"
+        private_ip_address: "{{ extra_lb_external_vip }}"
+        private_ip_allocation_method: Static
+        subnet: "{{ output_subnet_external.subnets[0].id }}"
+    backend_address_pools:
+      - name: "pool-{{ extra_platform_name }}-external"
+    probes:
+      - name: "hc-tcp-443"
+        port: 443
+        protocol: Tcp
+        interval: 5
+        fail_count: 2
+    load_balancing_rules:
+      - name: "rule-{{ extra_platform_name }}-external"
+        frontend_ip_configuration: "redir-{{ extra_platform_name }}-external"
+        backend_address_pool: "pool-{{ extra_platform_name }}-external"
+        protocol: All
+        load_distribution: Default
+        frontend_port: 0
+        backend_port: 0
+        probe: "hc-tcp-443"
+
+- name: VRF NGINX - CREATE route to VIP via ILB AWAF
+  delegate_to: localhost
+  azure_rm_route:
+    resource_group: "rg-{{ extra_platform_name }}"
+    route_table_name: "rt-{{ extra_platform_name }}-nginx"
+    name: "redir-vip-to-AWAF-{{ cur_index }}"
+    address_prefix: '{{ item }}'
+    next_hop_type: 'virtual_appliance'
+    next_hop_ip_address: '{{ extra_lb_external_vip }}'
+  loop: "{{ extra_vip_address_list_awaf }}"
+  loop_control:
+    index_var: cur_index
+
+
+
+
+
+
+
+
+
+
+...

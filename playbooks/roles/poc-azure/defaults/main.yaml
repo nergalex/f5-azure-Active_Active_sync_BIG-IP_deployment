@@ -1,0 +1,19 @@
+---
+# default variables
+activity:
+owner: "admin_e-mail_address"
+infra_admin_username: 'default_admin_username'
+tmos_version : "16.1.000000"
+f5_rpm_do_version: "1.26.0"
+f5_rpm_do_build_version: "5"
+f5_rpm_as3_version: "3.33.0"
+f5_rpm_as3_build_version: "4"
+f5_rpm_ts_version: "1.20.0"
+f5_rpm_ts_build_version: "3"
+
+design_common:
+  vrf:
+    - management
+
+
+...

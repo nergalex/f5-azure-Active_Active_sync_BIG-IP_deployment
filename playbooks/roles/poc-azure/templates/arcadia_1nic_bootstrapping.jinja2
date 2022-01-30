@@ -1,0 +1,19 @@
+{# VAR #}
+{% set install_docker %}
+yum install -y docker && service docker start {% endset %}
+{% set create_network %}
+docker network create internal {% endset %}
+{% set create_container_main %}
+docker run -dit -h mainapp --name=mainapp --net=internal -p 81:80 registry.gitlab.com/arcadia-application/main-app/mainapp:latest {% endset %}
+{% set create_container_backend %}
+docker run -dit -h backend --name=backend --net=internal -p 84:80  registry.gitlab.com/arcadia-application/back-end/backend:latest {% endset %}
+{% set create_container_app2 %}
+docker run -dit -h app2 --name=app2 --net=internal -p 82:80 registry.gitlab.com/arcadia-application/app2/app2:latest {% endset %}
+{% set create_container_app3 %}
+docker run -dit -h app3 --name=app3 --net=internal -p 83:80 registry.gitlab.com/arcadia-application/app3/app3:latest {% endset %}
+{% set get_nginx_conf %}
+mkdir -p /etc/nginx/conf.d/ && wget -P /etc/nginx/conf.d/ https://raw.githubusercontent.com/nergalex/PublicCloudBuilder/master/arcadia.conf {% endset %}
+{% set create_container_nginx %}
+sudo docker run -dit -h nginx --name=nginx --net=internal -p 80:80 -v /etc/nginx/conf.d/arcadia.conf:/etc/nginx/conf.d/arcadia.conf registry.gitlab.com/arcadia-application/nginx/nginxoss:latest {% endset %}
+{# RETURN #}
+{{ install_docker }}; {{ create_network }}; {{ create_container_main }}; {{ create_container_backend }}; {{ create_container_app2 }}; {{ create_container_app3 }}; {{ get_nginx_conf }}; {{ create_container_nginx }}
