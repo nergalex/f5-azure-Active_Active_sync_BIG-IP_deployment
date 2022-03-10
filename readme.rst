@@ -1,5 +1,6 @@
 Deployment of an Active/Active BIG-IP synchronized cluster in Azure
 ###################################################################
+.. contents:: Table of Contents
 
 Architecture
 *****************************************
