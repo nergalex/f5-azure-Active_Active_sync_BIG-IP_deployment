@@ -34,7 +34,9 @@
                 },
                 "serviceMain": {
                     "class": "Service_HTTP",
-                    "virtualAddresses": {{ extra_app.vip_subnet_awaf }},
+                    "virtualAddresses": [{
+                        "use": "vip_{{ extra_app.name }}"
+                    }],
                     "virtualPort": {{ extra_app.vs_listener_port_http }},
                     "securityLogProfiles": [
 					    { "bigip": "{{ extra_log_profile }}" }
@@ -87,6 +89,15 @@
                     "class": "WAF_Policy",
                     "url": "{{ extra_waf_policy }}",
                     "ignoreChanges": true
+                },
+                "vip_{{ extra_app.name }}" : {
+                    "class": "Service_Address",
+                    "virtualAddress": "{{ extra_app.vip_subnet_awaf[0] }}",
+                    "arpEnabled": true,
+                    "icmpEcho": "enable",
+                    "routeAdvertisement": "disable",
+                    "spanningEnabled": false,
+                    "trafficGroup": "/Common/traffic-group-local-only"
                 }
             }
         }

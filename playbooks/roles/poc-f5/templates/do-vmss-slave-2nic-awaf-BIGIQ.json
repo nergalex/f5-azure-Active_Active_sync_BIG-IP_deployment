@@ -95,12 +95,12 @@
       },
       "failoverGroup-awaf": {
         "class": "DeviceGroup",
-        "type": "sync-only",
+        "type": "sync-failover",
         "members": {{ var_failoverGroup_members }},
         "owner": "/Common/failoverGroup-awaf/members/0",
-        "autoSync": false,
+        "autoSync": true,
         "saveOnAutoSync": false,
-        "networkFailover": false,
+        "networkFailover": true,
         "fullLoadOnSync": false,
         "asmSync": true
       },
@@ -112,10 +112,20 @@
         "remoteUsername": "admin",
         "remotePassword": "{{ extra_admin_password }}"
       },
-      "mgmtRoute": {
+      "internet": {
+        "class": "ManagementRoute",
+        "gw": "{{ extra_gw_management }}",
+        "network": "0.0.0.0/0"
+      },
+      "crossManagement": {
         "class": "ManagementRoute",
         "gw": "{{ extra_gw_management }}",
         "network": "{{ extra_route_prefix_on_premise }}"
+      },
+      "dnsResolver": {
+        "class": "ManagementRoute",
+        "gw": "{{ extra_gw_management }}",
+        "network": "168.63.129.16/32"
       }
     }
   }
