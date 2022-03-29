@@ -111,6 +111,11 @@
         "remoteHost": "{{ var_failoverGroup_master_dataplane }}",
         "remoteUsername": "admin",
         "remotePassword": "{{ extra_admin_password }}"
+      },
+      "mgmtRoute": {
+        "class": "ManagementRoute",
+        "gw": "{{ extra_gw_management }}",
+        "network": "{{ extra_route_prefix_on_premise }}"
       }
     }
   }

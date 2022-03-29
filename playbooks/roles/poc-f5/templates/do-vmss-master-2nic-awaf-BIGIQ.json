@@ -111,6 +111,11 @@
         "remoteHost": "/Common/failoverGroup-awaf/members/0",
         "remoteUsername": "admin",
         "remotePassword": "{{ extra_admin_password }}"
+      },
+      "mgmtRoute": {
+        "class": "ManagementRoute",
+        "gw": "{{ extra_gw_management }}",
+        "network": "{{ extra_route_prefix_on_premise }}"
       }
     }
   }
