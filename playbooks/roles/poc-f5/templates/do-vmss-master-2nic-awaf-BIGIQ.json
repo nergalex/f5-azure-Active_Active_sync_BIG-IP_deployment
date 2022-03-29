@@ -95,12 +95,12 @@
       },
       "failoverGroup-awaf": {
         "class": "DeviceGroup",
-        "type": "sync-failover",
+        "type": "sync-only",
         "members": {{ var_failoverGroup_members }},
         "owner": "/Common/failoverGroup-awaf/members/0",
-        "autoSync": true,
+        "autoSync": false,
         "saveOnAutoSync": false,
-        "networkFailover": true,
+        "networkFailover": false,
         "fullLoadOnSync": false,
         "asmSync": true
       },
